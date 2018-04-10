@@ -1849,7 +1849,7 @@ class Plugin(indigo.PluginBase):
                 # Tracking is off so switch off the db file tracking
                 indigo.server.log('** Data Tracking Offline **')
 
-            self.updater.checkVersionPoll()
+            #self.updater.checkVersionPoll()
 
         except:
             errorHandler('startUp')
@@ -1904,8 +1904,8 @@ class Plugin(indigo.PluginBase):
             nestCheckForUpdates = self.pluginPrefs.get('updaterEmailsEnabled', True)
             nestTrig = self.pluginPrefs.get('nestTriggerSetpoints', "5")
             nestTriggerTemp = int(nestTrig)
-            if nestCheckForUpdates:
-                self.updater.checkVersionPoll()
+            # if nestCheckForUpdates:
+            #     self.updater.checkVersionPoll()
 
             # Is tracking now on?
             if self.nestDataManagement and not self.nestDataChange:
