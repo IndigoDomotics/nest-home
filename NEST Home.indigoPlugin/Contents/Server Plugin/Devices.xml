@@ -1,0 +1,757 @@
+<?xml version="1.0"?>
+<!--
+    Note that two devices are contained in this plug in the NEST Thermostat and NEST Protect
+
+    NEST Thermostat is, unsurprisingly, a thermostat device
+
+    Currently in the API from NEST the following fields are read/write
+    These are: fan_timer_active, hvac_mode, all target temperatures and away status
+
+    Any management of humidity options must be dealt with outside of the API at the moment
+    Not sure how the fan can be switched on or off but the fan_timer_active may be an option
+-->
+<!-- NEST Protect is a sensor/custom device
+
+    NEST Master is a system/custom device that represents all of the system wide triggers (e.g. Away)
+
+    Currently in the API from NEST all fields for the Protect are read only including the away status
+
+    The addition of the ui_color state does provide some immediate feedback on what's happening
+    and the level of the emergency
+
+    Updated to include new fields in latest API versions for NEST (30/11/2016)
+    Updated to include ECO status variables (away to be depreciated in future versions)
+
+	-->
+<Devices>
+    <Device type="thermostat" id="nestThermostat">
+		<Name>NEST Thermostat Module</Name>
+        <ConfigUI>
+			<Field id="geoFence" type="menu" defaultValue="">
+				<Label>Link to iFindStuff GeoFence?</Label>
+				<List class="self" filter="" method = "myActiveGeos" />
+				<CallbackMethod>geofenceAssign</CallbackMethod>
+			</Field>
+			<Field type="checkbox" hidden='true' id="ShowCoolHeatEquipmentStateUI" defaultValue="true">
+			</Field>
+			<Field id="NumTemperatureInputs" hidden='true' type="textfield" defaultValue="1">
+			</Field>
+			<Field id="NumHumidityInputs" hidden='true' type="textfield" defaultValue="1">
+			</Field>
+        </ConfigUI>
+		<States>
+			<!--
+			The NEST API provides a number of states that we want to access as part of the plugin
+			these are listed in the following custom device states
+
+            A majority of these states are read only from the device.
+
+            Those that can be changed are:
+                fan_timer_active, target_temperatures (all fields), hvac_mode, away
+			-->
+			<State id="device_id" readonly="YES">
+				<ValueType>String</ValueType>
+                <TriggerLabel>Device Key</TriggerLabel>
+				<ControlPageLabel>Device Key</ControlPageLabel>
+			</State>
+            <State id="locale" readonly="YES">
+				<ValueType>String</ValueType>
+				<TriggerLabel>Locale (en-US, en-GB or fr_CA)</TriggerLabel>
+				<ControlPageLabel>Region</ControlPageLabel>
+			</State>
+			<State id="geoAssignId" readonly="YES" defaultValue="0">
+				<ValueType>String</ValueType>
+				<TriggerLabel>Geo Location Device Id</TriggerLabel>
+				<TriggerLabelPrefix>Geo Location Id is</TriggerLabelPrefix>
+				<ControlPageLabel>Geo Id</ControlPageLabel>
+				<ControlPageLabelPrefix>Geo Location Id is</ControlPageLabelPrefix>
+			</State>
+			<State id="geoAssignName" readonly="YES" defaultValue="None">
+				<ValueType>String</ValueType>
+				<TriggerLabel>Geo Location Name Assigned</TriggerLabel>
+				<TriggerLabelPrefix>Geo Location is</TriggerLabelPrefix>
+				<ControlPageLabel>Geo Location Name</ControlPageLabel>
+				<ControlPageLabelPrefix>Geo Location is </ControlPageLabelPrefix>
+			</State>
+			<State id="geoNESTRange" readonly="YES" defaultValue="0">
+				<ValueType>Number</ValueType>
+				<TriggerLabel>Number of iFindStuff Devices in Geo NEST Range</TriggerLabel>
+				<TriggerLabelPrefix>iFindStuff Devices in NEST Range</TriggerLabelPrefix>
+				<ControlPageLabel>Geos in NEST Range</ControlPageLabel>
+			</State>
+			<State id="geoNearRange" readonly="YES" defaultValue="None">
+				<ValueType>Number</ValueType>
+				<TriggerLabel>Number of iFindStuff Devices Near Geo</TriggerLabel>
+				<TriggerLabelPrefix>iFindDevices near Geo Location</TriggerLabelPrefix>
+				<ControlPageLabel>iFindStuff Devices Near Geo</ControlPageLabel>
+			</State>
+            <State id="software_version" readonly="YES">
+				<ValueType>String</ValueType>
+				<TriggerLabel>Software Version</TriggerLabel>
+				<ControlPageLabel>Software Version</ControlPageLabel>
+			</State>
+            <State id="name" readonly="YES">
+				<ValueType>String</ValueType>
+				<TriggerLabel>Short Name</TriggerLabel>
+				<ControlPageLabel>Short Name</ControlPageLabel>
+			</State>
+            <State id="where_name" readonly="YES">
+				<ValueType>String</ValueType>
+				<TriggerLabel>Thermostat Location</TriggerLabel>
+				<ControlPageLabel>Location</ControlPageLabel>
+			</State>
+			<State id="name_long" readonly="YES">
+				<ValueType>String</ValueType>
+				<TriggerLabel>Long Name</TriggerLabel>
+				<ControlPageLabel>Full Name</ControlPageLabel>
+			</State>
+			<State id="label" readonly="YES">
+				<ValueType>String</ValueType>
+				<TriggerLabel>Label</TriggerLabel>
+				<ControlPageLabel>Thermostat Label</ControlPageLabel>
+			</State>
+            <State id="last_connection" readonly="YES">
+				<ValueType>String</ValueType>
+				<TriggerLabel>Last Connected</TriggerLabel>
+				<ControlPageLabel>Last Connected</ControlPageLabel>
+			</State>
+            <State id="is_online" readonly="YES">
+				<ValueType>Boolean</ValueType>
+				<TriggerLabel>Online</TriggerLabel>
+				<TriggerLabelPrefix>Online is</TriggerLabelPrefix>
+				<ControlPageLabel>Online</ControlPageLabel>
+			</State>
+            <State id="can_cool" readonly="YES">
+				<ValueType>Boolean</ValueType>
+				<TriggerLabel>Cooling available?</TriggerLabel>
+				<TriggerLabelPrefix>Device can cool</TriggerLabelPrefix>
+				<ControlPageLabel>Can Cool</ControlPageLabel>
+			</State>
+            <State id="can_heat" readonly="YES">
+				<ValueType>Boolean</ValueType>
+				<TriggerLabel>Heating available</TriggerLabel>
+				<TriggerLabelPrefix>Device can Heat</TriggerLabelPrefix>
+				<ControlPageLabel>Can Heat</ControlPageLabel>
+			</State>
+            <State id="has_fan" readonly="YES">
+				<ValueType>Boolean</ValueType>
+				<TriggerLabel>Separate fan?</TriggerLabel>
+				<TriggerLabelPrefix>Device has fan</TriggerLabelPrefix>
+				<ControlPageLabel>Separate Fan</ControlPageLabel>
+			</State>
+            <State id="fan_timer_active">
+				<ValueType>Boolean</ValueType>
+				<TriggerLabel>Fan Timer On</TriggerLabel>
+				<TriggerLabelPrefix>Fan is operating is</TriggerLabelPrefix>
+				<ControlPageLabel>Fan Timer Active</ControlPageLabel>
+			</State>
+            <State id="fan_timer_timeout" readonly="YES">
+				<ValueType>String</ValueType>
+				<TriggerLabel>Fan Timeout</TriggerLabel>
+				<ControlPageLabel>Fan Timeout</ControlPageLabel>
+			</State>
+			<State id="fan_timer_duration" readonly="YES">
+				<ValueType>Number</ValueType>
+				<TriggerLabel>Fan Timer Duration</TriggerLabel>
+				<ControlPageLabel>Fan Duration</ControlPageLabel>
+			</State>
+            <State id="has_leaf" readonly="YES">
+				<ValueType>Boolean</ValueType>
+				<TriggerLabel>Leaf Status</TriggerLabel>
+				<TriggerLabelPrefix>NEST has leaf displayed is</TriggerLabelPrefix>
+				<ControlPageLabel>Leaf Status</ControlPageLabel>
+			</State>
+            <State id="temperature_scale" readonly="YES">
+				<ValueType>String</ValueType>
+				<TriggerLabel>Temperature Scale</TriggerLabel>
+				<TriggerLabelPrefix>Temperature measured in</TriggerLabelPrefix>
+				<ControlPageLabel>Temperature Scale</ControlPageLabel>
+			</State>
+            <State id="target_temperature_f">
+				<ValueType>Number</ValueType>
+				<TriggerLabel>Target Temperature (F)</TriggerLabel>
+				<TriggerLabelPrefix>Current Target Temperature (F) is</TriggerLabelPrefix>
+				<ControlPageLabel>Single Target Temperature (F)</ControlPageLabel>
+			</State>
+            <State id="target_temperature_c">
+				<ValueType>Number</ValueType>
+				<TriggerLabel>Target Temperature (C)</TriggerLabel>
+				<TriggerLabelPrefix>Current Target Temperature (C) is</TriggerLabelPrefix>
+				<ControlPageLabel>Single Target Temperature (C)</ControlPageLabel>
+			</State>
+            <State id="target_temperature_high_f">
+				<ValueType>Number</ValueType>
+				<TriggerLabel>Maximum Temperature (F)</TriggerLabel>
+				<TriggerLabelPrefix>Dual System Maximum Temperature (F) is</TriggerLabelPrefix>
+				<ControlPageLabel>Heat Setpoint (F)</ControlPageLabel>
+			</State>
+            <State id="target_temperature_high_c">
+				<ValueType>Number</ValueType>
+				<TriggerLabel>Maximum Temperature (C)</TriggerLabel>
+				<TriggerLabelPrefix>Dual System Maximum Temperature (C) is</TriggerLabelPrefix>
+				<ControlPageLabel>Heat Setpoint (C)</ControlPageLabel>
+			</State>
+            <State id="target_temperature_low_f">
+				<ValueType>Number</ValueType>
+				<TriggerLabel>Minimum Temperature (F)</TriggerLabel>
+				<TriggerLabelPrefix>Dual System Minimum Temperature (F) is</TriggerLabelPrefix>
+				<ControlPageLabel>Cool Setpoint (F)</ControlPageLabel>
+			</State>
+            <State id="target_temperature_low_c">
+				<ValueType>Number</ValueType>
+				<TriggerLabel>Minimum Temperature (C)</TriggerLabel>
+				<TriggerLabelPrefix>Dual System Minimum Temperature (C) is</TriggerLabelPrefix>
+				<ControlPageLabel>Cool Setpoint (C)</ControlPageLabel>
+			</State>
+			<State id="away_temperature_high_f" readonly="YES">
+				<ValueType>Number</ValueType>
+				<TriggerLabel>Heat Away Setpoint (F)</TriggerLabel>
+				<TriggerLabelPrefix>Dual System Away Maximum (F)</TriggerLabelPrefix>
+				<ControlPageLabel>Heat Away Setpoint (F)</ControlPageLabel>
+			</State>
+            <State id="away_temperature_high_c" readonly="YES">
+				<ValueType>Number</ValueType>
+				<TriggerLabel>Heat Away Setpoint (C)</TriggerLabel>
+				<TriggerLabelPrefix>Dual System Away Maximum (C)</TriggerLabelPrefix>
+				<ControlPageLabel>Heat Away Setpoint (C)</ControlPageLabel>
+			</State>
+            <State id="away_temperature_low_f" readonly="YES">
+				<ValueType>Number</ValueType>
+				<TriggerLabel>Cool Away Setpoint (F)</TriggerLabel>
+				<TriggerLabelPrefix>Dual System Away Minimum (F)</TriggerLabelPrefix>
+				<ControlPageLabel>Cool Away Setpoint (F)</ControlPageLabel>
+			</State>
+            <State id="away_temperature_low_c" readonly="YES">
+				<ValueType>Number</ValueType>
+				<TriggerLabel>Cool Away Setpoint (C)</TriggerLabel>
+				<TriggerLabelPrefix>Dual System Away Minimum (C)</TriggerLabelPrefix>
+				<ControlPageLabel>Cool Away Setpoint (C)</ControlPageLabel>
+			</State>
+            <State id="eco_temperature_high_f" readonly="YES">
+				<ValueType>Number</ValueType>
+				<TriggerLabel>Heat Eco Setpoint (F)</TriggerLabel>
+				<TriggerLabelPrefix>Dual System Eco Maximum (F)</TriggerLabelPrefix>
+				<ControlPageLabel>Heat Eco Setpoint (F)</ControlPageLabel>
+			</State>
+            <State id="eco_temperature_high_c" readonly="YES">
+				<ValueType>Number</ValueType>
+				<TriggerLabel>Heat Eco Setpoint (C)</TriggerLabel>
+				<TriggerLabelPrefix>Dual System Eco Maximum (C)</TriggerLabelPrefix>
+				<ControlPageLabel>Heat Eco Setpoint (C)</ControlPageLabel>
+			</State>
+            <State id="eco_temperature_low_f" readonly="YES">
+				<ValueType>Number</ValueType>
+				<TriggerLabel>Cool Eco Setpoint (F)</TriggerLabel>
+				<TriggerLabelPrefix>Dual System Eco Minimum (F)</TriggerLabelPrefix>
+				<ControlPageLabel>Cool Eco Setpoint (F)</ControlPageLabel>
+			</State>
+            <State id="eco_temperature_low_c" readonly="YES">
+				<ValueType>Number</ValueType>
+				<TriggerLabel>Cool Eco Setpoint (C)</TriggerLabel>
+				<TriggerLabelPrefix>Dual System Eco Minimum (C)</TriggerLabelPrefix>
+				<ControlPageLabel>Cool Eco Setpoint (C)</ControlPageLabel>
+			</State>
+				<State id="locked_temp_max_c" readonly="YES">
+				<ValueType>Number</ValueType>
+				<TriggerLabel>Locked Setpoint Max (C)</TriggerLabel>
+				<TriggerLabelPrefix>Dual System Locked Maximum (C)</TriggerLabelPrefix>
+				<ControlPageLabel>Locked Heat Maximum Setpoint (C)</ControlPageLabel>
+			</State>
+				<State id="locked_temp_min_c" readonly="YES">
+				<ValueType>Number</ValueType>
+				<TriggerLabel>Locked Setpoint Min (C)</TriggerLabel>
+				<TriggerLabelPrefix>Dual System Locked Minimum (C)</TriggerLabelPrefix>
+				<ControlPageLabel>Locked Heat Minimum Setpoint (C)</ControlPageLabel>
+			</State>
+				<State id="locked_temp_max_f" readonly="YES">
+				<ValueType>Number</ValueType>
+				<TriggerLabel>Locked Setpoint Max (F)</TriggerLabel>
+				<TriggerLabelPrefix>Dual System Locked Maximum (C)</TriggerLabelPrefix>
+				<ControlPageLabel>Locked Heat Maximum Setpoint (C)</ControlPageLabel>
+			</State>
+				<State id="locked_temp_min_f" readonly="YES">
+				<ValueType>Number</ValueType>
+				<TriggerLabel>Locked Setpoint Min (F)</TriggerLabel>
+				<TriggerLabelPrefix>Dual System Locked Minimum (C)</TriggerLabelPrefix>
+				<ControlPageLabel>Locked Heat Minimum Setpoint (C)</ControlPageLabel>
+			</State>
+			<State id="is_locked">
+				<ValueType>Boolean</ValueType>
+				<TriggerLabel>Thermostat Locked?</TriggerLabel>
+				<TriggerLabelPrefix>Thermostat is</TriggerLabelPrefix>
+				<ControlPageLabel>Locked</ControlPageLabel>
+			</State>
+			<State id="sunlight_correction_enabled">
+				<ValueType>Boolean</ValueType>
+				<TriggerLabel>Sunlight Correction Enabled?</TriggerLabel>
+				<TriggerLabelPrefix>Sunlight Correction is</TriggerLabelPrefix>
+				<ControlPageLabel>Sunilight Correction Enabled</ControlPageLabel>
+			</State>
+			<State id="sunlight_correction_active">
+				<ValueType>Boolean</ValueType>
+				<TriggerLabel>Sunlight Correction Active?</TriggerLabel>
+				<TriggerLabelPrefix>Sunlight Correction is Active?</TriggerLabelPrefix>
+				<ControlPageLabel>Sunlight Correction Active</ControlPageLabel>
+			</State>
+			<State id="time_to_target">
+				<ValueType>String</ValueType>
+				<TriggerLabel>Time to Target Temperative?</TriggerLabel>
+				<TriggerLabelPrefix>Time to Target?</TriggerLabelPrefix>
+				<ControlPageLabel>Time to reach Target Temperature</ControlPageLabel>
+			</State>
+			<State id="time_to_target_training">
+				<ValueType>String</ValueType>
+				<TriggerLabel>Time to Target Status?</TriggerLabel>
+				<TriggerLabelPrefix>Time to Target Status?</TriggerLabelPrefix>
+				<ControlPageLabel>Time to reach Target Temperature Status</ControlPageLabel>
+			</State>
+            <State id="hvac_mode">
+				<ValueType>
+                    <List>
+                        <Option value="off">Off</Option>
+                        <Option value="heat">Heat</Option>
+                        <Option value="cool">Cool</Option>
+                        <Option value="heat-cool">Heat and Cool</Option>
+						<Option value="eco">Eco</Option>
+                    </List>
+                </ValueType>
+				<TriggerLabel>HVAC Mode Changed</TriggerLabel>
+                <TriggerLabelPrefix>Mode Changed to</TriggerLabelPrefix>
+				<ControlPageLabel>HVAC Mode</ControlPageLabel>
+                <ControlPageLabelPrefix>Mode is</ControlPageLabelPrefix>
+			</State>
+			<State id="hvac_state">
+				<ValueType>String</ValueType>
+				<TriggerLabel>HVAC State Changed</TriggerLabel>
+                <TriggerLabelPrefix>State Changed to</TriggerLabelPrefix>
+				<ControlPageLabel>HVAC State</ControlPageLabel>
+                <ControlPageLabelPrefix>Mode is</ControlPageLabelPrefix>
+			</State>
+			<State id="previous_hvac_state">
+				<ValueType>String</ValueType>
+				<TriggerLabel>Previous HVAC State before ECO</TriggerLabel>
+                <TriggerLabelPrefix>Previous State before ECO</TriggerLabelPrefix>
+				<ControlPageLabel>Previous HVAC State</ControlPageLabel>
+                <ControlPageLabelPrefix>Previous HVAC Mode (before ECO) was</ControlPageLabelPrefix>
+			</State>
+            <State id="ambient_temperature_f" readonly="YES">
+				<ValueType>Number</ValueType>
+				<TriggerLabel>Ambient Temperature (F)</TriggerLabel>
+				<TriggerLabelPrefix>Ambient Temperature (F) is</TriggerLabelPrefix>
+				<ControlPageLabel>Ambient Temperature (F)</ControlPageLabel>
+			</State>
+            <State id="ambient_temperature_c" readonly="YES">
+                <ValueType>Number</ValueType>
+			    <TriggerLabel>Ambient Temperature (C)</TriggerLabel>
+			    <TriggerLabelPrefix>Ambient Temperature (C) is</TriggerLabelPrefix>
+				<ControlPageLabel>Ambient Temperature (C)</ControlPageLabel>
+            </State>
+            <State id="humidity" readonly="YES">
+                <ValueType>String</ValueType>
+			    <TriggerLabel>Current Humidity (%)</TriggerLabel>
+				<TriggerLabelPrefix>Humidity (%) is</TriggerLabelPrefix>
+			    <ControlPageLabel>Current Humidity (%)</ControlPageLabel>
+            </State>
+			<State id="isheating" readonly="YES" default="No">
+				<ValueType>String</ValueType>
+				<TriggerLabel>Is Heating?</TriggerLabel>
+				<TriggerLabelPrefix>Device is currently heating is</TriggerLabelPrefix>
+				<ControlPageLabel>Is Heating?</ControlPageLabel>
+			</State>
+            <State id="iscooling" readonly="YES" default="No">
+                <ValueType>String</ValueType>
+			    <TriggerLabel>Is Cooling?</TriggerLabel>
+			    <TriggerLabelPrefix>Device is currently cooling is</TriggerLabelPrefix>
+				<ControlPageLabel>Is Cooling?</ControlPageLabel>
+            </State>
+			<State id="ambient_temperature_f_int" readonly="YES">
+				<ValueType>Number</ValueType>
+				<TriggerLabel>iAmbient Temperature (F)</TriggerLabel>
+				<TriggerLabelPrefix>Integer Ambient Temperature (F) is</TriggerLabelPrefix>
+				<ControlPageLabel>Ambient Temperature (F)</ControlPageLabel>
+			</State>
+            <State id="ambient_temperature_c_int" readonly="YES">
+                <ValueType>Number</ValueType>
+			    <TriggerLabel>iAmbient Temperature (C)</TriggerLabel>
+			    <TriggerLabelPrefix>Integer Ambient Temperature (C) is</TriggerLabelPrefix>
+				<ControlPageLabel>Ambient Temperature (C)</ControlPageLabel>
+            </State>
+			<State id="target_temperature_f_int" readonly="YES">
+				<ValueType>Number</ValueType>
+				<TriggerLabel>iSingle Target Temperature (F)</TriggerLabel>
+				<TriggerLabelPrefix>Integer Single Temperature (F) is</TriggerLabelPrefix>
+				<ControlPageLabel>iSingle Target Temperature (F)</ControlPageLabel>
+			</State>
+            <State id="target_temperature_c_int" readonly="YES">
+				<ValueType>Number</ValueType>
+				<TriggerLabel>iSingle Target Temperature (C)</TriggerLabel>
+				<TriggerLabelPrefix>Integer Single Temperature (C) is</TriggerLabelPrefix>
+				<ControlPageLabel>iSingle Target Temperature (C)</ControlPageLabel>
+			</State>
+            <State id="target_temperature_high_f_int" readonly="YES">
+				<ValueType>Number</ValueType>
+				<TriggerLabel>iHeat Setpoint Temperature (F)</TriggerLabel>
+				<TriggerLabelPrefix>Integer Dual Max Temperature (F) is</TriggerLabelPrefix>
+				<ControlPageLabel>iHeat Setpoint Temperature (F)</ControlPageLabel>
+			</State>
+            <State id="target_temperature_high_c_int" readonly="YES">
+				<ValueType>Number</ValueType>
+				<TriggerLabel>iHeat Setpoint Temperature (C)</TriggerLabel>
+				<TriggerLabelPrefix>Integer Dual Max Temperature (C) is</TriggerLabelPrefix>
+				<ControlPageLabel>iHeat SetpointTemperature (C)</ControlPageLabel>
+			</State>
+            <State id="target_temperature_low_f_int" readonly="YES">
+				<ValueType>Number</ValueType>
+				<TriggerLabel>iCool Setpoint (F)</TriggerLabel>
+				<TriggerLabelPrefix>Integer Dual Min Temperature (F) is</TriggerLabelPrefix>
+				<ControlPageLabel>iMinimum Temperature (F)</ControlPageLabel>
+			</State>
+            <State id="target_temperature_low_c_int" readonly="YES">
+				<ValueType>Number</ValueType>
+				<TriggerLabel>iCool Setpoint (C)</TriggerLabel>
+				<TriggerLabelPrefix>Integer Dual Max Temperature (C) is</TriggerLabelPrefix>
+				<ControlPageLabel>iCool Setpoint (C)</ControlPageLabel>
+			</State>
+            <State id="away_temperature_high_f_int" readonly="YES">
+				<ValueType>Number</ValueType>
+				<TriggerLabel>iAway Maximum Temperature (F)</TriggerLabel>
+				<TriggerLabelPrefix>Integer Away Max Temperature (F) is</TriggerLabelPrefix>
+				<ControlPageLabel>iHeat Away SetPoint (F)</ControlPageLabel>
+			</State>
+            <State id="away_temperature_high_c_int" readonly="YES">
+				<ValueType>Number</ValueType>
+				<TriggerLabel>iHeat Away SetPoint (C)</TriggerLabel>
+				<TriggerLabelPrefix>Integer Away Max Temperature (C) is</TriggerLabelPrefix>
+				<ControlPageLabel>iHeat Away SetPoint  (C)</ControlPageLabel>
+			</State>
+            <State id="away_temperature_low_f_int" readonly="YES">
+				<ValueType>Number</ValueType>
+				<TriggerLabel>iCool Away SetPoint (F)</TriggerLabel>
+				<TriggerLabelPrefix>Integer Away Min Temperature (F) is</TriggerLabelPrefix>
+				<ControlPageLabel>iCool Away SetPoint (F)</ControlPageLabel>
+			</State>
+            <State id="away_temperature_low_c_int" readonly="YES">
+				<ValueType>Number</ValueType>
+				<TriggerLabel>iCool Away SetPoint (C)</TriggerLabel>
+				<TriggerLabelPrefix>Integer Away Min Temperature (C) is</TriggerLabelPrefix>
+				<ControlPageLabel>iCool Away SetPoint (C)</ControlPageLabel>
+			</State>
+            <State id="coolSetpoint_String" readonly="YES">
+				<ValueType>String</ValueType>
+				<TriggerLabel>Current Coolpoint</TriggerLabel>
+				<TriggerLabelPrefix>Coolpoint is</TriggerLabelPrefix>
+				<ControlPageLabel>Current Coolpoint</ControlPageLabel>
+			</State>
+            <State id="heatSetpoint_String" readonly="YES">
+				<ValueType>String</ValueType>
+				<TriggerLabel>Current Heatpoint</TriggerLabel>
+				<TriggerLabelPrefix>Heatpoint is</TriggerLabelPrefix>
+				<ControlPageLabel>Current Heatpoint</ControlPageLabel>
+			</State>
+			<State id="heatOrCool" readonly="YES">
+				<ValueType>String</ValueType>
+				<TriggerLabel>Heating or Cooling</TriggerLabel>
+				<TriggerLabelPrefix>Currently heating or cooling is</TriggerLabelPrefix>
+				<ControlPageLabel>Heating or Cooling</ControlPageLabel>
+			</State>
+			<State id="time_since_last_connection" readonly="YES">
+				<ValueType>String</ValueType>
+				<TriggerLabel>Time since last connection</TriggerLabel>
+				<ControlPageLabel>Time since last connection</ControlPageLabel>
+			</State>
+			<State id="days_since_last_connection" readonly="YES">
+				<ValueType>Number</ValueType>
+				<TriggerLabel>Days since last connection</TriggerLabel>
+				<TriggerLabelPrefix>Days since last connection is</TriggerLabelPrefix>
+				<ControlPageLabel>Days since last connection</ControlPageLabel>
+			</State>
+			<State id="hours_since_last_connection" readonly="YES">
+				<ValueType>Number</ValueType>
+				<TriggerLabel>Hours since last connection</TriggerLabel>
+				<ControlPageLabel>Hours since last connection</ControlPageLabel>
+			</State>
+			<State id="mins_since_last_connection" readonly="YES">
+				<ValueType>Number</ValueType>
+				<TriggerLabel>Mins since last connection</TriggerLabel>
+				<ControlPageLabel>Mins since last connection</ControlPageLabel>
+			</State>
+			<State id="seconds_since_last_connection" readonly="YES">
+				<ValueType>Number</ValueType>
+				<TriggerLabel>Seconds since last connection</TriggerLabel>
+				<ControlPageLabel>Seconds since last connection</ControlPageLabel>
+			</State>
+			<State id="heatpointTrigger" readonly="YES">
+				<ValueType>String</ValueType>
+				<TriggerLabel>HeatPoint within x degrees of Ambient?</TriggerLabel>
+				<TriggerLabelPrefix>Heatpoint (Dual) trigger is</TriggerLabelPrefix>
+				<ControlPageLabel>Heatpoint Trigger</ControlPageLabel>
+			</State>
+			<State id="coolpointTrigger" readonly="YES">
+				<ValueType>String</ValueType>
+				<TriggerLabel>CoolPoint within x degrees of Ambient?</TriggerLabel>
+				<TriggerLabelPrefix>Coolpoint (Dual) trigger is</TriggerLabelPrefix>
+				<ControlPageLabel>Coolpoint Trigger</ControlPageLabel>
+			</State>
+			<State id="targetTrigger" readonly="YES">
+				<ValueType>String</ValueType>
+				<TriggerLabel>Target Temperature with x degrees of Ambient</TriggerLabel>
+				<TriggerLabelPrefix>Temperature (Single) trigger is</TriggerLabelPrefix>
+				<ControlPageLabel>Target Temperature Trigger</ControlPageLabel>
+			</State>
+			<State id="nest_client" readonly="YES">
+				<ValueType>Number</ValueType>
+				<TriggerLabel>NEST Client Version</TriggerLabel>
+				<ControlPageLabel>NEST Client Version</ControlPageLabel>
+			</State>
+		</States>
+        <UiDisplayStateId>humidity</UiDisplayStateId>
+	</Device>
+    <Device type="custom" id="nestProtect">
+		<Name>NEST Protect Module</Name>
+		<ConfigUI>
+			<!-- Hidden because not yet implemented by Indigo, but might have UI to edit
+			sensor values at some point. -->
+			<Field id="proFence" type="menu" defaultValue="">
+				<Label>Link to iFindStuff GeoFence?</Label>
+				<List class="self" filter="" method = "myActiveGeos" />
+				<CallbackMethod>profenceAssign</CallbackMethod>
+			</Field>
+			<Field id="AllowSensorValueChange" type="checkbox" hidden="true" defaultValue="false">
+				<Label>Enable controls to override sensor value state</Label>
+			</Field>
+		</ConfigUI>
+		<States>
+			<!-- By default sensor type devices automatically inherit:
+				onOffState state IF property SupportsOnState is True
+				sensorValue state IF property SupportsSensorValue is True
+				These states are unique to the NEST Protect API and are all readonly
+			-->
+			<State id="device_id" readonly="YES">
+				<ValueType>String</ValueType>
+				<TriggerLabel>Device Id</TriggerLabel>
+				<ControlPageLabel>Device_Id</ControlPageLabel>
+			</State>
+			<State id="locale" readonly="YES">
+				<ValueType>String</ValueType>
+				<TriggerLabel>Locale</TriggerLabel>
+				<ControlPageLabel>Locale</ControlPageLabel>
+			</State>
+			<State id="proAssignId" readonly="YES" defaultValue="0">
+				<ValueType>String</ValueType>
+				<TriggerLabel>Geo Location Device Id</TriggerLabel>
+				<ControlPageLabel>Geo Id</ControlPageLabel>
+			</State>
+			<State id="proAssignName" readonly="YES" defaultValue="None">
+				<ValueType>String</ValueType>
+				<TriggerLabel>Geo Location Name Assigned</TriggerLabel>
+				<ControlPageLabel>Geo Location Name</ControlPageLabel>
+			</State>
+			<State id="proNESTRange" readonly="YES" defaultValue="0">
+				<ValueType>Number</ValueType>
+				<TriggerLabel>Number of iFindStuff Devices in Geo NEST Range</TriggerLabel>
+				<TriggerLabelPrefix>Number of iFindStuff devices in range is</TriggerLabelPrefix>
+				<ControlPageLabel>Geos in NEST Range</ControlPageLabel>
+			</State>
+			<State id="proNearRange" readonly="YES" defaultValue="None">
+				<ValueType>Number</ValueType>
+				<TriggerLabel>Number of iFindStuff Devices Near Geo</TriggerLabel>
+				<TriggerLabelPrefix>Number of iFindStuff devices nearby is</TriggerLabelPrefix>
+				<ControlPageLabel>iFindStuff Devices Near Geo</ControlPageLabel>
+			</State>
+            <State id="software_version" readonly="YES">
+				<ValueType>String</ValueType>
+				<TriggerLabel>Software Version</TriggerLabel>
+				<ControlPageLabel>Software Version</ControlPageLabel>
+			</State>
+            <State id="name" readonly="YES">
+				<ValueType>String</ValueType>
+				<TriggerLabel>Short Name</TriggerLabel>
+				<ControlPageLabel>Short Name</ControlPageLabel>
+			</State>
+            <State id="name_long" readonly="YES">
+				<ValueType>String</ValueType>
+				<TriggerLabel>Long Name</TriggerLabel>
+				<ControlPageLabel>Long Name</ControlPageLabel>
+			</State>
+			<State id="where_name" readonly="YES">
+				<ValueType>String</ValueType>
+				<TriggerLabel>Location Name</TriggerLabel>
+				<ControlPageLabel>Location</ControlPageLabel>
+			</State>
+            <State id="last_connection" readonly="YES">
+				<ValueType>String</ValueType>
+				<TriggerLabel>Last connected</TriggerLabel>
+				<ControlPageLabel>Last connected</ControlPageLabel>
+			</State>
+            <State id="is_online" readonly="YES">
+				<ValueType>Boolean</ValueType>
+				<TriggerLabel>Online</TriggerLabel>
+				<TriggerLabelPrefix>Protect Online is</TriggerLabelPrefix>
+				<ControlPageLabel>Online</ControlPageLabel>
+			</State>
+            <State id="battery_health" readonly="YES">
+				<ValueType>String</ValueType>
+				<TriggerLabel>Battery</TriggerLabel>
+				<ControlPageLabel>Battery</ControlPageLabel>
+			</State>
+            <State id="co_alarm_state" readonly="YES">
+				<ValueType>String</ValueType>
+				<TriggerLabel>Current CO Alarm State</TriggerLabel>
+				<ControlPageLabel>Current CO alarm state</ControlPageLabel>
+			</State>
+            <State id="smoke_alarm_state" readonly="YES">
+				<ValueType>String</ValueType>
+				<TriggerLabel>Current Smoke Alarm State</TriggerLabel>
+				<ControlPageLabel>Current Smoke Alarm State</ControlPageLabel>
+			</State>
+            <State id="is_manual_test_active" readonly="YES">
+				<ValueType>Boolean</ValueType>
+				<TriggerLabel>Manual Test Running</TriggerLabel>
+				<ControlPageLabel>Manual Test Running</ControlPageLabel>
+			</State>
+            <State id="last_manual_test_time" readonly="YES">
+				<ValueType>String</ValueType>
+				<TriggerLabel>Last Manual Test</TriggerLabel>
+				<ControlPageLabel>Last Manual Test</ControlPageLabel>
+			</State>
+            <State id="ui_color_state" readonly="YES">
+				<ValueType>String</ValueType>
+				<TriggerLabel>Ring Colour</TriggerLabel>
+				<TriggerLabelPrefix>Protect Ring Colour is</TriggerLabelPrefix>
+				<ControlPageLabel>Ring Colour</ControlPageLabel>
+			</State>
+			<State id="time_since_last_connection" readonly="YES">
+				<ValueType>String</ValueType>
+				<TriggerLabel>Time since last connection</TriggerLabel>
+				<ControlPageLabel>Time since last connection</ControlPageLabel>
+			</State>
+			<State id="days_since_last_connection" readonly="YES">
+				<ValueType>Number</ValueType>
+				<TriggerLabel>Days since last connection</TriggerLabel>
+				<TriggerLabelPrefix>Days since last connection is</TriggerLabelPrefix>
+				<ControlPageLabel>Days since last connection</ControlPageLabel>
+			</State>
+			<State id="hours_since_last_connection" readonly="YES">
+				<ValueType>Number</ValueType>
+				<TriggerLabel>Hours since last connection</TriggerLabel>
+				<ControlPageLabel>Hours since last connection</ControlPageLabel>
+			</State>
+			<State id="mins_since_last_connection" readonly="YES">
+				<ValueType>Number</ValueType>
+				<TriggerLabel>Mins since last connection</TriggerLabel>
+				<ControlPageLabel>Mins since last connection</ControlPageLabel>
+			</State>
+			<State id="seconds_since_last_connection" readonly="YES">
+				<ValueType>Number</ValueType>
+				<TriggerLabel>Seconds since last connection</TriggerLabel>
+				<ControlPageLabel>Seconds since last connection</ControlPageLabel>
+			</State>
+			<State id="time_since_last_test" readonly="YES">
+				<ValueType>String</ValueType>
+				<TriggerLabel>Time since last test</TriggerLabel>
+				<ControlPageLabel>Time since last test</ControlPageLabel>
+			</State>
+			<State id="days_since_last_test" readonly="YES">
+				<ValueType>Number</ValueType>
+				<TriggerLabel>Days since last test</TriggerLabel>
+				<TriggerLabelPrefix>Days since last test is</TriggerLabelPrefix>
+				<ControlPageLabel>Days since last test</ControlPageLabel>
+			</State>
+			<State id="days_since_last_warning" readonly="YES">
+				<ValueType>Number</ValueType>
+				<TriggerLabel>Days since last warning</TriggerLabel>
+				<TriggerLabelPrefix>Days since last warning is</TriggerLabelPrefix>
+				<ControlPageLabel>Days since last warning</ControlPageLabel>
+			</State>
+			<State id="time_of_last_warning" readonly="YES">
+				<ValueType>String</ValueType>
+				<TriggerLabel>Time of last warning</TriggerLabel>
+				<ControlPageLabel>Time of last warning</ControlPageLabel>
+			</State>
+			<State id="time_since_last_warning" readonly="YES">
+				<ValueType>String</ValueType>
+				<TriggerLabel>Time since last warning</TriggerLabel>
+				<ControlPageLabel>Time since last warning</ControlPageLabel>
+			</State>
+			<State id="days_since_last_emergency" readonly="YES">
+				<ValueType>Number</ValueType>
+				<TriggerLabel>Days since last emergency</TriggerLabel>
+				<TriggerLabelPrefix>Days since last emergency is</TriggerLabelPrefix>
+				<ControlPageLabel>Days since last emergency</ControlPageLabel>
+			</State>
+			<State id="time_of_last_emergency" readonly="YES">
+				<ValueType>String</ValueType>
+				<TriggerLabel>Time of last emergency</TriggerLabel>
+				<ControlPageLabel>Time of last emergency</ControlPageLabel>
+			</State>
+			<State id="time_since_last_emergency" readonly="YES">
+				<ValueType>String</ValueType>
+				<TriggerLabel>Time since last emergency</TriggerLabel>
+				<ControlPageLabel>Time since last emergency</ControlPageLabel>
+			</State>
+			<State id="last_warning_type" readonly="YES">
+				<ValueType>String</ValueType>
+				<TriggerLabel>Last warning type</TriggerLabel>
+				<TriggerLabelPrefix>Last warning type was</TriggerLabelPrefix>
+				<ControlPageLabel>Last warning type</ControlPageLabel>
+			</State>
+			<State id="last_emergency_type" readonly="YES">
+				<ValueType>String</ValueType>
+				<TriggerLabel>Last emergency type</TriggerLabel>
+				<TriggerLabelPrefix>Last emergency type was</TriggerLabelPrefix>
+				<ControlPageLabel>Last emergency type</ControlPageLabel>
+			</State>
+			<State id="co_alarm_bool" readonly="YES">
+				<ValueType>String</ValueType>
+				<TriggerLabel>CO Alarm Sounding</TriggerLabel>
+				<TriggerLabelPrefix>CO Alarm Sounding is</TriggerLabelPrefix>
+				<ControlPageLabel>CO Alarm Sounding</ControlPageLabel>
+			</State>
+			<State id="smoke_alarm_bool" readonly="YES">
+				<ValueType>String</ValueType>
+				<TriggerLabel>Smoke Alarm Sounding</TriggerLabel>
+				<TriggerLabelPrefix>Smoke Alarm Sounding is</TriggerLabelPrefix>
+				<ControlPageLabel>Smoke Alarm Sounding</ControlPageLabel>
+			</State>
+			<State id="battery_alarm_bool" readonly="YES">
+				<ValueType>String</ValueType>
+				<TriggerLabel>Battery Alarm</TriggerLabel>
+				<TriggerLabelPrefix>Battery needs attention is</TriggerLabelPrefix>
+				<ControlPageLabel>Battery Alarm</ControlPageLabel>
+			</State>
+		</States>
+        <UiDisplayStateId>ui_color_state</UiDisplayStateId>
+    </Device>
+    <Device type="custom" id="nestHomeMaster">
+        <Name>NEST Home Master Device</Name>
+        <States>
+            <State id="nestHomeName" readonly="YES">
+                <ValueType>String</ValueType>
+                <TriggerLabel>Short Name</TriggerLabel>
+                <ControlPageLabel>Short Name</ControlPageLabel>
+            </State>
+            <State id="nestAway">
+                <ValueType>String</ValueType>
+                <TriggerLabel>NEST Away Status</TriggerLabel>
+				<TriggerLabelPrefix>NEST status is</TriggerLabelPrefix>
+                <ControlPageLabel>NEST Away Status</ControlPageLabel>
+            </State>
+            <State id="nestCountryCode" readonly="YES">
+                <ValueType>String</ValueType>
+                <TriggerLabel>Country Code</TriggerLabel>
+                <ControlPageLabel>Country Code</ControlPageLabel>
+            </State>
+            <State id="nestPostcode" readonly="YES">
+                <ValueType>String</ValueType>
+                <TriggerLabel>Postcode or ZIP</TriggerLabel>
+                <ControlPageLabel>Postcode or ZIP</ControlPageLabel>
+            </State>
+            <State id="nestTimeZone" readonly="YES">
+                <ValueType>String</ValueType>
+                <TriggerLabel>Time Zone</TriggerLabel>
+                <ControlPageLabel>TimeZone</ControlPageLabel>
+            </State>
+        </States>
+        <UiDisplayStateId>nestAway</UiDisplayStateId>
+    </Device>
+</Devices>

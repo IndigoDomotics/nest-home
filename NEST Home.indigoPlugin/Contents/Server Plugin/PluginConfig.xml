@@ -1,0 +1,109 @@
+<?xml version="1.0"?>
+<PluginConfig>
+	<SupportURL>
+		http://forums.indigodomo.com/viewforum.php?f=170
+	</SupportURL>
+    <Field id="nestAuthorisation" type="textfield" defaultValue="">
+        <Label>Your Nest authorization key:</Label>
+    </Field>
+    <Field id="simpleSeparator1" type="separator"/>
+    <Field id="nestTimer" type="textfield" defaultValue="60">
+        <Label>Time between updates (secs):</Label>
+    </Field>
+    <Field id="nestTriggerSetpoints" type="textfield" defaultValue="5">
+        <Label>Difference between Cool/Heat Setpoints and ambient for trigger (see forum):</Label>
+    </Field>
+    <Field id="nestData" type="checkbox" defaultValue="true">
+        <Label>Should NEST Home archive all data changes?:</Label>
+        <Description>Enables Data Management and allows generation of useage reports and archiving of data:</Description>
+    </Field>
+    <Field id="nestTxt" type="textfield" defaultValue="/Users">
+        <Label>Text file Directory:</Label>
+        <Description>Enter a Directory for Nest Map Text Files and Data Tracking:</Description>
+    </Field>
+    <Field id="simpleSeparator2" type="separator"/>
+    <Field id="helpAPI" type="checkbox" defaultValue="false">
+        <Label>API Help:</Label>
+        <Description>Check this box if you want NEST Home to help you get a key</Description>
+    </Field>
+    <Field id="simpleSeparator6" type="separator"/>
+    <Field id="getPIN"
+		type="button"
+		tooltip="Click this button to open your browser and get a PIN for your home.nest.com account"
+		visibleBindingId="helpAPI"
+		visibleBindingValue="true">
+	    <Label>Click this button to get your PIN</Label>
+	    <Title>Get NEST PIN</Title>
+	    <CallbackMethod>getNestPIN</CallbackMethod>
+    </Field>
+    <Field id="helpAPI2"
+       type="checkbox"
+       defaultValue="false"
+       visibleBindingId = "helpAPI"
+       visibleBindingValue = "true">>
+        <Label>I've got a PIN:</Label>
+        <Description>Check this box when you've got your PIN</Description>
+    </Field>
+    <Field id="nestPIN" type="textfield" visibleBindingId="helpAPI2" visibleBindingValue="true" defaultValue="">
+        <Label>Enter your PIN (in capitals):</Label>
+    </Field>
+    <Field id="getAPIKey"
+		type="button"
+		tooltip="When you've entered your PIN click on this button to generate your API Key"
+		visibleBindingId="helpAPI2"
+		visibleBindingValue="true">
+	    <Label>Click this button to get your secure API key</Label>
+	    <Title>Generate NEST API Key</Title>
+	    <CallbackMethod>getNestAPI</CallbackMethod>
+    </Field>
+    <Field id="simpleSeparator5" type="separator"/>
+    <Field id="checkboxDebug" type="checkbox" defaultValue="false">
+        <Label>Debug:</Label>
+        <Description>Debugging information to console (not recommended)</Description>
+    </Field>
+    <Field id="showTemps" type="checkbox" defaultValue="false">
+        <Label>Show temperature changes?</Label>
+        <Description>Show temperature information in the log</Description>
+    </Field>
+    <Field id="showWarnings" type="checkbox" defaultValue="false">
+        <Label>Show Protect Warnings?</Label>
+        <Description>Show Protect safety information in the log</Description>
+    </Field>
+    <Field id="showChanges" type="checkbox" defaultValue="false">
+        <Label>Show changes?</Label>
+        <Description>Show other field changes in the log</Description>
+    </Field>
+    <Field id="simpleSeparator3" type="separator"/>
+    <Field
+		id = "updaterEmailsEnabled"
+		type = "checkbox"
+		defaultValue = "false"
+		tooltip  =  "Enables (disables) email notifications.">
+		<Label> </Label>
+		<Description>Enable/Disable email version updates</Description>
+	</Field>
+	<Field
+		id = "updaterEmail"
+		type = "textfield"
+		visibleBindingId = "updaterEmailsEnabled"
+		visibleBindingValue = "true"
+		tooltip = "Please enter the email address to receive notifications of updates to the plugin.">
+		<Label>Email address:</Label>
+	</Field>
+     <Field id="simpleSeparator4" type="separator"/>
+    <Field id="nestAway" type="textfield" defaultValue="home">
+        <Label>Away Status:</Label>
+    </Field>
+    <Field id="nestPostcode" hidden="true" type="textfield" defaultValue="">
+        <Label>Post Code or ZIP:</Label>
+    </Field>
+    <Field id="nestTimeZone" hidden = "true" type="textfield" defaultValue="">
+        <Label>Time Zone:</Label>
+    </Field>
+    <Field id="nestCountryCode" hidden ="true" type="textfield" defaultValue="">
+        <Label>Country Code:</Label>
+    </Field>
+    <Field id="nestHomeName" type="textfield" defaultValue="Home" hidden="true">
+        <Label>NEST Name:</Label>
+    </Field>
+</PluginConfig>

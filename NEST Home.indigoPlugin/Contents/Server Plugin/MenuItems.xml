@@ -1,0 +1,273 @@
+<?xml version="1.0"?>
+<!-- By default there are limited menu options
+    Below are the additional commands provided
+        displayNest() - Allows the user to see a list of all NEST devices
+        in the indigo log
+
+        printNest() - Allows the user to save a text file of all NEST devices
+-->
+<MenuItems>
+	<MenuItem id="menuOption1">
+		<Name>Send NEST Map to Indigo Log</Name>
+		<CallbackMethod>nestDisplay</CallbackMethod>
+	</MenuItem>
+	<MenuItem id="menuOption2">
+		<Name>Save NEST Map to text file</Name>
+		<CallbackMethod>nestPrint</CallbackMethod>
+	</MenuItem>
+	<MenuItem id="menuOption3">
+		<ConfigUI>
+			<Field id="exportAllData" type="checkbox"
+				   defaultValue="false">
+			    <Label>Export all data (not recommended)?</Label>
+				<Description>Could take some time if a lot of data is stored</Description>
+		    </Field>
+			<Field id="simpleSeparator31"
+				   visibleBindingId="exportAllData" visibleBindingValue="false"
+				   type="separator"/>
+			<Field id="autoLabel1" type="label"
+					visibleBindingId="exportAllData" visibleBindingValue="false">
+	        	<Label>Data range selection</Label>
+    		</Field>
+			<Field id="autoLabel2"
+				   type="label"
+				   fontSize="small"
+				   fontColor="blue"
+				   visibleBindingId="exportAllData" visibleBindingValue="false" >
+	        	<Label>Enter a start and finish point for the data extract.  Note that dates are inclusive</Label>
+    		</Field>
+			<Field id="exportRangeStart"
+				   type="textfield"
+				   visibleBindingId = 'exportAllData'
+				   visibleBindingValue = 'false'
+				   defaultValue="00/00/00">
+			    <Label>Starting point for data extract?</Label>
+				<Description>First day of data to be extracted</Description>
+		    </Field>
+			<Field id="exportRangeEnd"
+				   type="textfield"
+				   visibleBindingId = 'exportAllData'
+				   visibleBindingValue = 'false'
+				   defaultValue="00/00/00">
+			    <Label>Ending point for data extract?</Label>
+				<Description>Last day of data to be extracted</Description>
+		    </Field>
+			<Field id="simpleSeparator32"
+				   visibleBindingId="exportAllData" visibleBindingValue="false"
+				   type="separator"/>
+			<Field id="autoLabel3" type="label"
+					visibleBindingId="exportAllData" visibleBindingValue="false" >
+	        	<Label>Data content selection</Label>
+    		</Field>
+			<Field id="autoLabel4"
+				   type="label"
+				   fontSize="small"
+				   fontColor="blue"
+				   visibleBindingId="exportAllData" visibleBindingValue="false" >
+	        	<Label>Now select what data you'd like to extract. Note a different file is created for each type of data</Label>
+    		</Field>
+			<Field id="autoLabel8"
+				   type="label"
+				   fontSize="small"
+				   fontColor="blue"
+				   visibleBindingId="exportAllData" visibleBindingValue="false" >
+	        	<Label>Export Temperature and Humudity changes for analysis by selecting these boxes</Label>
+    		</Field>
+			<Field id="dataTemperature"
+				   type="checkbox"
+				   defaultValue="false"
+				   visibleBindingId="exportAllData" visibleBindingValue="false" >
+			    <Label>Amibient Temperature Changes?</Label>
+				<Description>Export how the temperature changes over time</Description>
+		    </Field>
+			<Field id="dataHumidity"
+				   type="checkbox"
+				   defaultValue="false"
+				   visibleBindingId="exportAllData" visibleBindingValue="false" >
+			    <Label>Humidity Changes?</Label>
+				<Description>Export how the humidity changes over time</Description>
+		    </Field>
+			<Field id="autoLabel5"
+				   type="label"
+				   fontSize="small"
+				   fontColor="blue"
+				   visibleBindingId="exportAllData" visibleBindingValue="false" >
+	        	<Label>HVAC changes lists all changes in MODE (heat, cool, heat-cool or off) and STATE (heating, cooling, off)</Label>
+    		</Field>
+			<Field id="dataHVAC"
+				   type="checkbox"
+				   defaultValue="false"
+				   visibleBindingId="exportAllData" visibleBindingValue="false" >
+			    <Label>HVAC Changes?</Label>
+				<Description>List all HVAC state changes</Description>
+		    </Field>
+			<Field id="autoLabel6"
+				   type="label"
+				   fontSize="small"
+				   fontColor="blue"
+				   visibleBindingId="exportAllData" visibleBindingValue="false" >
+	        	<Label>HVAC changes lists all changes in setpoints - for Dual (Heat and Cool setpoints) or Single (Target)</Label>
+    		</Field>
+			<Field id="dataSetpoint"
+				   type="checkbox"
+				   defaultValue="false"
+				   visibleBindingId="exportAllData" visibleBindingValue="false" >
+			    <Label>Setpoint Changes?</Label>
+				<Description>List all setpoint changes</Description>
+		    </Field>
+			<Field id="autoLabel7"
+				   type="label"
+				   fontSize="small"
+				   fontColor="blue"
+				   visibleBindingId="exportAllData" visibleBindingValue="false" >
+	        	<Label>Gives a list of leaf events</Label>
+    		</Field>
+			<Field id="dataLeaf"
+				   type="checkbox"
+				   defaultValue="false"
+				   visibleBindingId="exportAllData" visibleBindingValue="false" >
+			    <Label>Leaf Changes?</Label>
+				<Description>List all Leaf changes</Description>
+		    </Field>
+			<Field id="dataAway"
+				   type="checkbox"
+				   defaultValue="false"
+				   visibleBindingId="exportAllData" visibleBindingValue="false" >
+			    <Label>Home/Away Changes?</Label>
+				<Description>List all Home/Away Changes</Description>
+		    </Field>
+		</ConfigUI>
+		<Name>Export NEST Data for analysis</Name>
+		<CallbackMethod>nestDataOut</CallbackMethod>
+	</MenuItem>
+	<MenuItem id="menuOption4">
+		<ConfigUI>
+			<Field id="reportFile" type="checkbox"
+				   defaultValue="false">
+			    <Label>Report all data to file (recommended)?</Label>
+				<Description>Creates text reports in Nest Directory for viewing</Description>
+		    </Field>
+			<Field id="reportAllData" type="checkbox"
+				   defaultValue="false">
+			    <Label>Report all data to log (not recommended)?</Label>
+				<Description>Could take some time if a lot of data is stored</Description>
+		    </Field>
+			<Field id="simpleSeparator51"
+				   visibleBindingId="reportAllData" visibleBindingValue="false"
+				   type="separator"/>
+			<Field id="autoLabel41" type="label"
+					visibleBindingId="reportAllData" visibleBindingValue="false">
+	        	<Label>Data range selection</Label>
+    		</Field>
+			<Field id="autoLabel52"
+				   type="label"
+				   fontSize="small"
+				   fontColor="blue"
+				   visibleBindingId="reportAllData" visibleBindingValue="false" >
+	        	<Label>Enter a start and finish point for the data extract.  Note that dates are inclusive</Label>
+    		</Field>
+			<Field id="reportRangeStart"
+				   type="textfield"
+				   visibleBindingId = 'reportAllData'
+				   visibleBindingValue = 'false'
+				   defaultValue="00/00/00">
+			    <Label>Starting point for data report?</Label>
+				<Description>First day of data to be reported on</Description>
+		    </Field>
+			<Field id="reportRangeEnd"
+				   type="textfield"
+				   visibleBindingId = 'reportAllData'
+				   visibleBindingValue = 'false'
+				   defaultValue="00/00/00">
+			    <Label>Ending point for data report?</Label>
+				<Description>Last day of data to be reported on</Description>
+		    </Field>
+			<Field id="simpleSeparator132"
+				   visibleBindingId="reportAllData" visibleBindingValue="false"
+				   type="separator"/>
+			<Field id="autoLabel53" type="label"
+					visibleBindingId="reportAllData" visibleBindingValue="false" >
+	        	<Label>Data content selection</Label>
+    		</Field>
+			<Field id="autoLabel54"
+				   type="label"
+				   fontSize="small"
+				   fontColor="blue"
+				   visibleBindingId="reportAllData" visibleBindingValue="false" >
+	        	<Label>Now select what data you'd like to report on. Note a different report is created for each type of data</Label>
+    		</Field>
+			<Field id="autoLabel58"
+				   type="label"
+				   fontSize="small"
+				   fontColor="blue"
+				   visibleBindingId="reportAllData" visibleBindingValue="false" >
+	        	<Label>Report on Temperature and Humudity changes by selecting these boxes</Label>
+    		</Field>
+			<Field id="reportTemperature"
+				   type="checkbox"
+				   defaultValue="false"
+				   visibleBindingId="reportAllData" visibleBindingValue="false" >
+			    <Label>Amibient Temperature Changes?</Label>
+				<Description>Report how the temperature changes over time</Description>
+		    </Field>
+			<Field id="reportHumidity"
+				   type="checkbox"
+				   defaultValue="false"
+				   visibleBindingId="reportAllData" visibleBindingValue="false" >
+			    <Label>Humidity Changes?</Label>
+				<Description>Report on how the humidity changes over time</Description>
+		    </Field>
+			<Field id="autoLabel55"
+				   type="label"
+				   fontSize="small"
+				   fontColor="blue"
+				   visibleBindingId="reportAllData" visibleBindingValue="false" >
+	        	<Label>HVAC changes lists all changes in MODE (heat, cool, heat-cool or off) and STATE (heating, cooling, off)</Label>
+    		</Field>
+			<Field id="reportHVAC"
+				   type="checkbox"
+				   defaultValue="false"
+				   visibleBindingId="reportAllData" visibleBindingValue="false" >
+			    <Label>HVAC Changes?</Label>
+				<Description> Report all HVAC state changes</Description>
+		    </Field>
+			<Field id="autoLabel56"
+				   type="label"
+				   fontSize="small"
+				   fontColor="blue"
+				   visibleBindingId="reportAllData" visibleBindingValue="false" >
+	        	<Label>HVAC changes lists all changes in setpoints - for Dual (Heat and Cool setpoints) or Single (Target)</Label>
+    		</Field>
+			<Field id="reportSetpoint"
+				   type="checkbox"
+				   defaultValue="false"
+				   visibleBindingId="reportAllData" visibleBindingValue="false" >
+			    <Label>Setpoint Changes?</Label>
+				<Description>Report on all setpoint changes</Description>
+		    </Field>
+			<Field id="autoLabel57"
+				   type="label"
+				   fontSize="small"
+				   fontColor="blue"
+				   visibleBindingId="reportAllData" visibleBindingValue="false" >
+	        	<Label>Reports a list of leaf events</Label>
+    		</Field>
+			<Field id="reportLeaf"
+				   type="checkbox"
+				   defaultValue="false"
+				   visibleBindingId="reportAllData" visibleBindingValue="false" >
+			    <Label>Leaf Changes?</Label>
+				<Description>Report on all Leaf changes</Description>
+		    </Field>
+			<Field id="reportAway"
+				   type="checkbox"
+				   defaultValue="false"
+				   visibleBindingId="reportAllData" visibleBindingValue="false" >
+			    <Label>Home/Away Changes?</Label>
+				<Description>List all Home/Away Changes</Description>
+		    </Field>
+		</ConfigUI>
+		<Name>Report NEST Data for analysis to Log or File</Name>
+		<CallbackMethod>reportDataOut</CallbackMethod>
+	</MenuItem>
+</MenuItems>

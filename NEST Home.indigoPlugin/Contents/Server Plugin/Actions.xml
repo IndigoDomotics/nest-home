@@ -1,0 +1,55 @@
+<?xml version="1.0"?>
+<!-- By default the NEST thermostat type devices will inherit all
+	 ThermostatAction actions, which will be dispatched to
+	 the actionControlThermostat() method defined in plugin.py.
+	 
+	 The only additional command required is to set the away status
+	 and this is provided below.  Other commands may be added in the future
+-->
+<Actions>
+    <Action id="awayChangeState" deviceFilter="self.nestHomeMaster">
+            <Name>Set Away Status</Name>
+            <CallbackMethod>setAwayStatus</CallbackMethod>
+            <ConfigUI>
+                <Field type="menu" id="awayPopUp" defaultValue="home">
+                    <Label>What NEST Away Status?</Label>
+                    <List>
+                        <Option value="Away">Away</Option>
+                        <Option value="Home">Home</Option>
+                    </List>
+                </Field>
+            </ConfigUI>
+        </Action>
+        <Action id="fanChangeState" deviceFilter="self.nestThermostat">
+            <Name>Set Fan Status</Name>
+            <CallbackMethod>setFanStatus</CallbackMethod>
+            <ConfigUI>
+                <Field type="menu" id="fanPopUp" defaultValue="off">
+                    <Label>What NEST Fan Status?</Label>
+                    <List>
+                        <Option value="true">On</Option>
+                        <Option value="false">Off</Option>
+                    </List>
+                </Field>
+            </ConfigUI>
+        </Action>
+        <Action id="fanDurationSet" deviceFilter="self.nestThermostat">
+            <Name>Set Fan Duration</Name>
+            <CallbackMethod>setFanDuration</CallbackMethod>
+            <ConfigUI>
+                <Field type="menu" id="fanDuration" defaultValue="15">
+                    <Label>Fan Operation Duration (mins)?</Label>
+                    <List>
+                        <Option value="15">15</Option>
+                        <Option value="30">30</Option>
+                        <Option value="45">45</Option>
+                        <Option value="60">60</Option>
+                        <Option value="120">15</Option>
+                        <Option value="240">30</Option>
+                        <Option value="480">45</Option>
+                        <Option value="960">60</Option>
+                    </List>
+                </Field>
+            </ConfigUI>
+        </Action>
+</Actions>

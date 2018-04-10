@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>PluginVersion</key>
+	<string>2.0.50</string>
+	<key>ServerApiVersion</key>
+	<string>1.19.0</string>
+	<key>CFBundleDisplayName</key>
+	<string>NEST Home</string>
+	<key>CFBundleIdentifier</key>
+	<string>com.corporatechameleon.nestplugBeta</string>
+	<key>CFBundleVersion</key>
+	<string>1.0.0</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>http://forums.indigodomo.com/viewforum.php?f=170</string>
+		</dict>
+	</array>
+</dict>
+</plist>
