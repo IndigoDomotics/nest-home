@@ -130,8 +130,7 @@ global db
 nestDebug = True
 
 # Check for version number and adjust error file location accordingly
-myIndigoVersion = indigo.server.version[0]
-errorFile = '/Library/Application Support/Perceptive Automation/Indigo '+myIndigoVersion+'/Logs/NESTHome1Errors.log'
+errorFile = indigo.server.getLogsFolderPath() + "/NESTHome1Errors.log"
 
 gFindStuff = False
 global nestTriggerTemp
